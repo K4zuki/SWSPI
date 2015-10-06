@@ -23,11 +23,17 @@
 #include <mbed.h>
 #include "SWSPI.h"
 
-SWSPI::SWSPI(PinName mosi_pin, PinName miso_pin, PinName sclk_pin)
+SWSPI::SWSPI(PinName mosi_pin, PinName miso_pin, PinName sclk_pin):_fast(false)
 {
-    mosi = new DigitalOut(mosi_pin);
-    miso = new DigitalIn(miso_pin);
-    sclk = new DigitalOut(sclk_pin);
+    mosi = new DigitalInOut(mosi_pin);
+    mosi->input();
+    mosi->mode(PullNone);
+    miso = new DigitalInOut(miso_pin);
+    miso->input();
+    miso->mode(PullNone);
+    sclk = new DigitalInOut(sclk_pin);
+    sclk->input();
+    sclk->mode(PullNone);
     format(8);
     frequency();
 }
@@ -51,11 +57,24 @@ void SWSPI::format(int bits, int mode)
 void SWSPI::frequency(int hz)
 {
     this->freq = hz;
+    _fast = (hz >= 1000000) ? true : false;
 }
+
+#pragma Otime
 
 int SWSPI::write(int value)
 {
+    mosi->output();
+    mosi->mode(PullNone);
+    miso->input();
+    miso->mode(PullNone);
+    sclk->output();
+    sclk->mode(PullNone);
+
     int read = 0;
+    if (_fast) {
+        read = fast_write(value);
+    }
     for (int bit = bits-1; bit >= 0; --bit)
     {
         mosi->write(((value >> bit) & 0x01) != 0);
@@ -68,7 +87,7 @@ int SWSPI::write(int value)
 
         sclk->write(!polarity);
 
-        wait(1.0/freq/2);
+        wait_us(1000000/freq/2);
 
         if (phase == 1)
         {
@@ -78,9 +97,30 @@ int SWSPI::write(int value)
 
         sclk->write(polarity);
 
-        wait(1.0/freq/2);
+        wait_us(1000000/freq/2);
     }
+
+    mosi->input();
+    mosi->mode(PullNone);
+    miso->input();
+    miso->mode(PullNone);
+    sclk->input();
+    sclk->mode(PullNone);
     
     return read;
+}
+
+uint8_t SWSPI::fast_write(uint8_t value)
+{
+    uint8_t data = 0;
+    for(uint8_t mask = 0x80; mask; mask >>= 1) {
+        mosi->write((value & mask) ? 1 : 0);
+        if (miso->read()) {
+            data |= mask;
+        }
+        sclk->write(1);
+        sclk->write(0);
+    }
+    return data;
 }
 

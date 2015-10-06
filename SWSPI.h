@@ -49,15 +49,17 @@
 class SWSPI
 {
 private:
-    DigitalOut* mosi;
-    DigitalIn* miso;
-    DigitalOut* sclk;
+    uint8_t fast_write(uint8_t value);
+    DigitalInOut* mosi;
+    DigitalInOut* miso;
+    DigitalInOut* sclk;
     int port;
     int bits;
     int mode;
     int polarity; // idle clock value
     int phase; // 0=sample on leading (first) clock edge, 1=trailing (second)
     int freq;
+    bool _fast;
     
 public:
     /** Create SWSPI object
