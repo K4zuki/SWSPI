@@ -23,6 +23,8 @@
 #ifndef SWSPI_H
 #define SWSPI_H
 
+#include "mbed.h"
+
 /** A software implemented SPI that can use any digital pins
  *
  * Useful when don't want to share a single SPI hardware among attached devices
@@ -50,9 +52,9 @@ class SWSPI
 {
 private:
     uint8_t fast_write(uint8_t value);
-    DigitalInOut* mosi;
-    DigitalInOut* miso;
-    DigitalInOut* sclk;
+    DigitalOut* mosi;
+    DigitalIn* miso;
+    DigitalOut* sclk;
     int port;
     int bits;
     int mode;

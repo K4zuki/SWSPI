@@ -20,20 +20,13 @@
  * THE SOFTWARE.
  */
 
-#include <mbed.h>
 #include "SWSPI.h"
 
 SWSPI::SWSPI(PinName mosi_pin, PinName miso_pin, PinName sclk_pin):_fast(false)
 {
-    mosi = new DigitalInOut(mosi_pin);
-    mosi->input();
-    mosi->mode(PullNone);
-    miso = new DigitalInOut(miso_pin);
-    miso->input();
-    miso->mode(PullNone);
-    sclk = new DigitalInOut(sclk_pin);
-    sclk->input();
-    sclk->mode(PullNone);
+    mosi = new DigitalOut(mosi_pin);
+    miso = new DigitalIn(miso_pin);
+    sclk = new DigitalOut(sclk_pin);
     format(8);
     frequency();
 }
@@ -64,49 +57,34 @@ void SWSPI::frequency(int hz)
 
 int SWSPI::write(int value)
 {
-    mosi->output();
-    mosi->mode(PullNone);
-    miso->input();
-    miso->mode(PullNone);
-    sclk->output();
-    sclk->mode(PullNone);
 
     int read = 0;
     if (_fast) {
         read = fast_write(value);
-    }
-    for (int bit = bits-1; bit >= 0; --bit)
-    {
-        mosi->write(((value >> bit) & 0x01) != 0);
+    } else {
+        for (int bit = bits-1; bit >= 0; --bit) {
+            mosi->write(((value >> bit) & 0x01) != 0);
 
-        if (phase == 0)
-        {
-            if (miso->read())
-                read |= (1 << bit);
+            if (phase == 0) {
+                if (miso->read())
+                    read |= (1 << bit);
+            }
+
+            sclk->write(!polarity);
+
+            wait_us(1000000/freq/2);
+
+            if (phase == 1) {
+                if (miso->read())
+                    read |= (1 << bit);
+            }
+
+            sclk->write(polarity);
+
+            wait_us(1000000/freq/2);
         }
-
-        sclk->write(!polarity);
-
-        wait_us(1000000/freq/2);
-
-        if (phase == 1)
-        {
-            if (miso->read())
-                read |= (1 << bit);
-        }
-
-        sclk->write(polarity);
-
-        wait_us(1000000/freq/2);
     }
 
-    mosi->input();
-    mosi->mode(PullNone);
-    miso->input();
-    miso->mode(PullNone);
-    sclk->input();
-    sclk->mode(PullNone);
-    
     return read;
 }
 
