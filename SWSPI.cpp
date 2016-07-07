@@ -24,10 +24,13 @@
 
 SWSPI::SWSPI(PinName mosi_pin, PinName miso_pin, PinName sclk_pin):_fast(false)
 {
-    mosi = new DigitalOut(mosi_pin);
-    miso = new DigitalIn(miso_pin);
-    sclk = new DigitalOut(sclk_pin);
-    format(8);
+    mosi = new DigitalInOut(mosi_pin);
+    miso = new DigitalInOut(miso_pin);
+    sclk = new DigitalInOut(sclk_pin);
+    mosi->output();
+    miso->input();
+    sclk->output();
+    format(8,0);
     frequency();
 }
 
@@ -58,6 +61,9 @@ void SWSPI::frequency(int hz)
 int SWSPI::write(int value)
 {
 
+    mosi->output();
+    miso->input();
+    sclk->output();
     int read = 0;
     if (_fast) {
         read = fast_write(value);
@@ -84,6 +90,9 @@ int SWSPI::write(int value)
             wait_us(1000000/freq/2);
         }
     }
+    mosi->input();
+    miso->input();
+    sclk->input();
 
     return read;
 }

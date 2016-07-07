@@ -52,9 +52,9 @@ class SWSPI
 {
 private:
     uint8_t fast_write(uint8_t value);
-    DigitalOut* mosi;
-    DigitalIn* miso;
-    DigitalOut* sclk;
+    DigitalInOut* mosi;
+    DigitalInOut* miso;
+    DigitalInOut* sclk;
     int port;
     int bits;
     int mode;
